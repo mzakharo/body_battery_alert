@@ -5,10 +5,10 @@ import Toybox.SensorHistory;
 import Toybox.Lang;
 import Toybox.Time;
 
+using Constants;
+
 (:background)
 class BodyBatteryBackground extends System.ServiceDelegate {
-    
-    const BATTERY_THRESHOLD = 20; // Alert when battery drops Threshold
     
     function initialize() {
         ServiceDelegate.initialize();
@@ -18,11 +18,20 @@ class BodyBatteryBackground extends System.ServiceDelegate {
         // Get the current body battery level
         var bodyBattery = getBodyBatteryLevel();
         
-        if (bodyBattery != null) {            
+        if (bodyBattery != null) {
             // Check if we should send a notification
             checkAndSendNotification(bodyBattery);
-        }        
+        }
         Background.exit(null);
+    }
+    
+    function getBatteryThreshold() as Number {
+        var threshold = Application.Storage.getValue("batteryThreshold");
+        if (threshold == null) {
+            threshold = Constants.DEFAULT_BATTERY_THRESHOLD;
+            Application.Storage.setValue("batteryThreshold", threshold);
+        }
+        return threshold;
     }
     
     function getBodyBatteryLevel() as Number? {
@@ -55,13 +64,15 @@ class BodyBatteryBackground extends System.ServiceDelegate {
         
         var currentTime = Time.now().value();
         
+        var batteryThreshold = getBatteryThreshold();
+        
         // Check if battery is below threshold
-        if (bodyBattery < BATTERY_THRESHOLD) {
-            var shouldNotify = false;            
-            if (lastNotificationBattery != null && lastNotificationBattery >= BATTERY_THRESHOLD) {
+        if (bodyBattery <= batteryThreshold) {
+            var shouldNotify = false;
+            if (lastNotificationBattery != null && lastNotificationBattery > batteryThreshold) {
                 // Battery just dropped below threshold
                 shouldNotify = true;
-            }                     
+            }
             if (shouldNotify && notificationsEnabled) {
                 sendLowBatteryNotification(bodyBattery);
             }

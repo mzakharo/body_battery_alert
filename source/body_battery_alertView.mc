@@ -6,11 +6,15 @@ import Toybox.Time.Gregorian;
 import Toybox.SensorHistory;
 import Toybox.Lang;
 
+using Constants;
+
 class body_battery_alertView extends WatchUi.View {
+
     
     private var _bodyBattery as Number?;
     private var _lastCheckTime as Number?;
     private var _notificationsEnabled as Boolean;
+    private var _batteryThreshold as Number?;
 
     function initialize() {
         View.initialize();
@@ -37,7 +41,9 @@ class body_battery_alertView extends WatchUi.View {
         _bodyBattery = Application.Storage.getValue("lastNotificationBattery");
         _lastCheckTime = Application.Storage.getValue("lastCheckTime");
         var enabled = Application.Storage.getValue("notificationsEnabled");
-        _notificationsEnabled = (enabled != null) ? enabled : true;  
+        _notificationsEnabled = (enabled != null) ? enabled : true;
+        var threshold = Application.Storage.getValue("batteryThreshold");
+        _batteryThreshold = (threshold != null) ? threshold : Constants.DEFAULT_BATTERY_THRESHOLD;
 
         
         // Clear the screen
@@ -56,9 +62,9 @@ class body_battery_alertView extends WatchUi.View {
         // Body Battery Level
         if (_bodyBattery != null) {
             var batteryColor = Graphics.COLOR_GREEN;
-            if (_bodyBattery < 20) {
+            if (_bodyBattery <= _batteryThreshold) {
                 batteryColor = Graphics.COLOR_RED;
-            } else if (_bodyBattery < 40) {
+            } else if (_bodyBattery < (_batteryThreshold + 20)) {
                 batteryColor = Graphics.COLOR_YELLOW;
             }
             
@@ -68,7 +74,7 @@ class body_battery_alertView extends WatchUi.View {
             // Battery status text
             dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
             var statusText = "Body Battery";
-            if (_bodyBattery < 20) {
+            if (_bodyBattery <= _batteryThreshold) {
                 statusText = "LOW BATTERY!";
             }
             dc.drawText(centerX, centerY + 20, Graphics.FONT_SMALL, statusText, Graphics.TEXT_JUSTIFY_CENTER);
@@ -95,10 +101,14 @@ class body_battery_alertView extends WatchUi.View {
             dc.drawText(centerX, height * 0.75, Graphics.FONT_XTINY, timeText, Graphics.TEXT_JUSTIFY_CENTER);
         }
         
-        // Notification status
+        // Notification status and threshold
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         var notifText = _notificationsEnabled ? "Alerts: ON" : "Alerts: OFF";
-        dc.drawText(centerX, height * 0.85, Graphics.FONT_XTINY, notifText, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(centerX, height * 0.82, Graphics.FONT_XTINY, notifText, Graphics.TEXT_JUSTIFY_CENTER);
+        
+        // Threshold setting
+        var thresholdText = "Threshold: " + _batteryThreshold + "%";
+        dc.drawText(centerX, height * 0.88, Graphics.FONT_XTINY, thresholdText, Graphics.TEXT_JUSTIFY_CENTER);
     }
 
     // Called when this View is removed from the screen. Save the
